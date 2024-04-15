@@ -40,7 +40,7 @@
 
 # # Example usage
 # api_key = "your-real-api-key"
-# folder_path = 'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\Test_api_script'
+# folder_path = 'file_path''
 # question = "You receive two sets of 6 figures in image 1. Set A is a 2 by 3 grid on the left, set B is a 2 by 3 grid on the right. These sets of figures are differentiated from each other by a rule. What is the rule that separates the two sets?"
 # process_folder(api_key, folder_path, question)
 
@@ -94,7 +94,7 @@
 
 # # Example usage
 # api_key = "your-real-api-key"
-# folder_path = 'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\Test_api_script'
+# folder_path = 'file_path'
 # question = "You receive two sets of 6 figures in this image. Set A is a 2 by 3 grid on the left, set B is a 2 by 3 grid on the right. These sets of figures are differentiated from each other by a rule. What is the rule that separates the two sets?"
 # output_excel = 'Model_Responses.xlsx'
 # process_folder(api_key, folder_path, question, output_excel)
@@ -160,7 +160,7 @@ def process_folder(api_key, folder_path, question, output_excel):
 
 # Example usage
 api_key = "your-real-api-key"  # Replace 'your-real-api-key' with the actual API key
-folder_path = "C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\Test_api_script"
+folder_path = 'file_path'
 question = "You receive two sets of 6 figures in this image. Set A is a 2 by 3 grid on the left, set B is a 2 by 3 grid on the right. These sets of figures are differentiated from each other by a rule. What is the rule that separates the two sets?"
 output_excel = 'Model_Responses.xlsx'
 process_folder(api_key, folder_path, question, output_excel)
