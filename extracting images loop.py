@@ -1,30 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  2 16:04:22 2024
-
-@author: Marit
-"""
-
-from PIL import Image
-import os
-
 # Base path where the images are located
-base_path = 'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\'
+base_path = 'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Cleaned images\\png format'
 
-# Dimensions and positions for the squares
-square_size = (97, 97)
-column_starts = [8, 116, 301, 409]  # Starts for columns 1 and 2 of sets 1 and 2 respectively
-row_starts = [6, 114, 222]  # Starts for rows 1, 2, and 3
+# Dimensions and positions for the squares of the CLEANED BPs
+square_size = (140, 140)
+column_starts = [14, 179, 457, 619]  # Starts for columns 1 and 2 of sets 1 and 2 respectively
+row_starts = [11, 176, 338]  # Starts for rows 1, 2, and 3
 border_size = 2  # Size of the border around each square
+
+# Dimensions and positions for the squares of the UNCLEANED BPs
+# square_size = (97, 97)
+# column_starts = [8, 116, 301, 409]
+# row_starts = [6, 114, 222]
+# border_size = 2
 
 columns = 2
 rows = 3
 sets = 2
 
 # Loop through the range of images
-for i in range(1, 100):  # Assuming file names are 'BP_1' to 'BP_99'
+for i in range(2, 100):  # Assuming file names are 'BP_1' to 'BP_99'
     # Construct the full path of the image
-    image_name = f'p0{i}.gif'
+    image_name = f'p0{i}.png'
     original_image_path = os.path.join(base_path, image_name)
     original_image = Image.open(original_image_path)
     
