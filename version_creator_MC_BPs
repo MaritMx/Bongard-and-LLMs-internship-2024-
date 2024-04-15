@@ -11,8 +11,8 @@ grid_spacing = 50  # Space between grids
 img_width, img_height = 100, 100  # Assuming size for demonstration; adjust as necessary
 
 # Paths - Adjust these paths to match your system
-image_dir = "C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Individual squares"
-base_save_path = "C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\MC_variations"
+image_dir ='file_path'
+base_save_path = 'file_path'
 
 # Ensure output directory exists
 os.makedirs(base_save_path, exist_ok=True)
