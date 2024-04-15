@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Apr  4 15:55:17 2024
-
-@author: Marit
-"""
-
 from PIL import Image
 import os
 
@@ -17,22 +10,7 @@ border_size = 10  # Border size between images
 outer_border = 20  # Outer border size around the entire image
 grid_spacing = 50  # Space between grids
 
-# Load the extracted images (assuming they are named sequentially like 'BP_1_1_1.png')
-extracted_image_paths = [
-    f'p02_{set_id}_{col_num}_{row_num}.png'
-    for set_id in range(1, grid_count + 1)
-    for row_num in range(1, rows + 1)
-    for col_num in range(1, columns + 1)
-]
 
-# Load images and get individual image dimensions
-images = [Image.open(img_path) for img_path in extracted_image_paths]
-img_width, img_height = images[0].size
-
-# Adjusted calculations for side-by-side grids with outer borders and increased space between grids
-total_width = (img_width * columns + border_size * (columns - 1)) * grid_count + grid_spacing + outer_border * 2
-total_height = img_height * rows + border_size * (rows - 1) + outer_border * 2
-new_image = Image.new('RGB', (total_width, total_height), 'white')
 
 def flip_image(image, flip_type):
     """Flip image based on the flip_type."""
@@ -45,6 +23,25 @@ def flip_image(image, flip_type):
 
 
 def create_and_save_image(version, flip_type="none"):
+    # Load the extracted images (assuming they are named sequentially like 'BP_1_1_1.png')
+    extracted_image_paths = [
+        os.path.join('C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Cleaned images\\png format', f'p0{i}_{set_id}_{col_num}_{row_num}.png')
+        for set_id in range(1, grid_count + 1)
+        for row_num in range(1, rows + 1)
+        for col_num in range(1, columns + 1)
+        ]
+
+    
+
+    # Load images and get individual image dimensions
+    images = [Image.open(img_path) for img_path in extracted_image_paths]
+    img_width, img_height = images[0].size
+
+    # Adjusted calculations for side-by-side grids with outer borders and increased space between grids
+    total_width = (img_width * columns + border_size * (columns - 1)) * grid_count + grid_spacing + outer_border * 2
+    total_height = img_height * rows + border_size * (rows - 1) + outer_border * 2
+    new_image = Image.new('RGB', (total_width, total_height), 'white')
+    
     # Create a new image for each version to reset its state
     new_image = Image.new('RGB', (total_width, total_height), 'white')
 
@@ -96,7 +93,7 @@ def create_and_save_image(version, flip_type="none"):
                         index = grid_num * image_count + row_num * columns + col_num
                 
                 elif version == 8:
-                    # Switch columns of only the first set
+                    # Switch columns of only the second set
                     if grid_num == 1:
                         # Calculate the modified column index for switching
                         modified_col_num = (columns - 1) - col_num
@@ -379,16 +376,20 @@ def create_and_save_image(version, flip_type="none"):
                 new_image.paste(image_to_paste, (left, upper))
 
     # Save the image for the current version
-    new_image_path = f'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\BP_2_{version}_{flip_type}.png'
+    new_image_path = f'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\BP_{i}_{version}_{flip_type}.png'
     new_image.save(new_image_path)
     print(f"Saved: {new_image_path}")
 
 
 
-versions_to_skip = range(15, 27)  # Example: Skipping versions 5, 10, 15
+versions_to_skip = range(15, 27)  # Example: Skipping versions 15 to 26
+BPs_to_skip = range(0, 2)  # Example: Skipping BP 1
 
-for i in range(1, 37):  # Assuming you have 36 versions
-    if i in versions_to_skip:
-        continue  # Skip the creation and saving of images for this version
-    for flip_type in ["none", "vertical", "horizontal"]:
-        create_and_save_image(i, flip_type)
+for i in range(1,100):
+    if i in BPs_to_skip: 
+        continue
+    for j in range(1, 37):  # Assuming you have 36 versions
+        if j in versions_to_skip:
+            continue  # Skip the creation and saving of images for this version
+        for flip_type in ["none", "vertical", "horizontal"]:
+            create_and_save_image(j, flip_type)
