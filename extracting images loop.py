@@ -1,5 +1,5 @@
 # Base path where the images are located
-base_path = 'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Cleaned images\\png format'
+base_path = 'file_path'
 
 # Dimensions and positions for the squares of the CLEANED BPs
 square_size = (140, 140)
