@@ -25,7 +25,7 @@ def flip_image(image, flip_type):
 def create_and_save_image(version, flip_type="none"):
     # Load the extracted images (assuming they are named sequentially like 'BP_1_1_1.png')
     extracted_image_paths = [
-        os.path.join('C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Cleaned images\\png format', f'p0{i}_{set_id}_{col_num}_{row_num}.png')
+        os.path.join('file_path', f'p0{i}_{set_id}_{col_num}_{row_num}.png')
         for set_id in range(1, grid_count + 1)
         for row_num in range(1, rows + 1)
         for col_num in range(1, columns + 1)
@@ -376,7 +376,7 @@ def create_and_save_image(version, flip_type="none"):
                 new_image.paste(image_to_paste, (left, upper))
 
     # Save the image for the current version
-    new_image_path = f'C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Variations\\BP_{i}_{version}_{flip_type}.png'
+    new_image_path = f'file_path\\BP_{i}_{version}_{flip_type}.png' #change file path to where you want to save it
     new_image.save(new_image_path)
     print(f"Saved: {new_image_path}")
 
