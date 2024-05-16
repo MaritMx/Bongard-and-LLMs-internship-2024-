@@ -102,12 +102,73 @@ def generate_and_save_combined_images(problem_sets):
                 combined_image.save(save_path)
                 print(f'Saved: {save_path}')
 
-
-                
-                
+            
 
 # List of specific problem sets to process
 problem_sets = ["p02", "p03", "p09", "p08", "p021", "p023", "p07", "p048", "p034", "p036", "p010", "p039", "p025", "p06", "p035"]
 
 # Process images
 generate_and_save_combined_images(problem_sets)
+
+
+# making version 1: 
+for i in problem_sets:
+    # Manually specify the images based on their new naming scheme after you've renamed them
+    image_filenames = {
+        'version_1': [f'{i}_1_1_1.png', f'{i}_1_2_1.png', f'{i}_1_1_2.png', f'{i}_1_2_2.png', f'{i}_2_1_1.png', f'{i}_2_2_1.png', f'{i}_2_1_2.png', f'{i}_2_2_2.png']#, # row 1 and 2     
+}
+    
+    # image_filenames_left_out = {
+    #     'stimuli_1': [f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png'], # row 1 and 2 
+    }
+           
+    # Initialize the version number
+    version_number = 1
+    
+    for version, filenames in image_filenames.items():
+        # Increment the version number only after processing all flip types for a given set
+        for swap in [False]:  # Loop for original and swapped versions
+            # Temporarily store images to save after processing all flip types
+            images_to_save = []
+            for mirror_mode in ['none', 'horizontal', 'vertical']:  # Loop for mirroring modes
+                # Create a blank image for the composite
+                total_width = outer_border * 2 + img_width * columns * grid_count + border_size * (columns - 1) * grid_count + grid_spacing * (grid_count - 1)
+                total_height = outer_border * 2 + img_height * rows + border_size * (rows - 1)
+                combined_image = Image.new('RGB', (total_width, total_height), 'white')
+    
+                # Determine the order of sets based on whether we are swapping
+                sets = [filenames[4:], filenames[:4]] if swap else [filenames[:4], filenames[4:]]
+    
+                # Iterate through each set
+                for set_id, img_names in enumerate(sets, start=1):
+                    for idx, img_name in enumerate(img_names):
+                        img_path = os.path.join(image_dir, img_name)
+                        img = Image.open(img_path).resize((img_width, img_height))
+    
+                        # Apply mirroring based on the mode
+                        if mirror_mode == 'horizontal':
+                            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                        elif mirror_mode == 'vertical':
+                            img = img.transpose(Image.FLIP_TOP_BOTTOM)
+    
+                        col, row = idx % columns, idx // columns
+                        x = outer_border + (set_id - 1) * (columns * img_width + border_size * (columns - 1) + grid_spacing) + col * (img_width + border_size)
+                        y = outer_border + row * (img_height + border_size)
+                        combined_image.paste(img, (x, y))
+    
+                # Store the combined image and its filename to be saved
+                filename = f'MC_{i}_1_{mirror_mode}.png'
+                
+                images_to_save.append((combined_image, filename))
+                
+                #save_left_out_images(version_number, mirror_mode)
+    
+    
+            # Save all images for the current version number
+            for img, fname in images_to_save:
+                img.save(os.path.join(base_save_path, fname))
+    
+            # Increment the version number for the next set of flip types
+            #version_number += 1
+    
+print("Composite images created successfully.")
