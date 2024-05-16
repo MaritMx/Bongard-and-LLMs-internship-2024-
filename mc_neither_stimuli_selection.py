@@ -11,8 +11,8 @@ import os
 
 random.seed(3)
 
-image_dir = "C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\Cleaned images\\png format"
-unused_images_path = "C:\\Users\\Marit\\Downloads\\Documenten UvA\\ResMas\\Internship\\Bongard problems\\MC_variations\\Stimuli\\test\\neither"
+image_dir = #path to cleaned individual images
+unused_images_path = #path where you want to save the neither simuli
 
 problem_sets = ["p002", "p003", "p009", "p008", "p023", "p007", "p048", "p034", "p036", "p010", "p039", "p025", "p006", "p035"] # excludes p021 because unclear which stimuli
 
