@@ -1,0 +1,221 @@
+#*** open ended data collection***
+import openai
+import os
+import base64
+import pandas as pd
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def query_model(api_key, left_image_path, right_image_path, example_left_image_base64, example_right_image_base64, question):
+    # Load and encode the test images to base64
+    left_image_base64 = encode_image_to_base64(left_image_path)
+    right_image_base64 = encode_image_to_base64(right_image_path)
+    # Prepare the messages with the question and image
+    messages = [
+       #{"role": "system", "content": "You are a model that can analyze images and explain content."},
+       {"role": "user", "content": [
+           {"type": "text", "text": "You are going to solve a Bongard problem. Here is an example of a solved Bongard problem."}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Here you see a set of figures called set A."},
+           {"type": "image", "image": example_left_image_base64}, 
+           {"type": "text", "text": "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes."}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Here you see another set of figures called set B."},
+           {"type": "image", "image": example_right_image_base64}, 
+           {"type": "text", "text": "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes."}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Answer: Thus the rule that differentiates set A from set B is that the figures in set A contain wavelines that get smaller while the figures in set B contain wavelines that get bigger."}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Now it's your turn."}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Here you see a set of figures called set A."},
+           {"type": "image", "image": left_image_base64}
+       ]},
+       {"role": "user", "content": [
+           {"type": "text", "text": "Here you see another set of figures called set B."},
+           {"type": "image", "image": right_image_base64}
+       ]},
+       {"role": "user", "content": question}
+   ]
+
+    # Initialize the client with your API key
+    openai.api_key = api_key
+
+    # Query the model
+    response = openai.chat.completions.create(
+        model="gpt-4-1106-vision-preview",
+        messages=messages,
+        max_tokens=300,
+        temperature=0
+    )
+
+    # Return the response from the model
+    return response.choices[0].message.content 
+
+def process_folder(api_key, folder_A, folder_B, question, output_excel):
+    df = pd.DataFrame(columns=['gpt-4'])
+
+    # Get the example images' base64 strings
+    example_left_image_path = os.path.join(folder_A, "BP_43_2_none_example_left.png")
+    example_right_image_path = os.path.join(folder_B, "BP_43_2_none_example_right.png")
+    example_left_image_base64 = encode_image_to_base64(example_left_image_path)
+    example_right_image_base64 = encode_image_to_base64(example_right_image_path)
+
+    # Ensure both folders have the same number of images and pairs them correctly
+    images_A = sorted([img for img in os.listdir(folder_A) if img != "BP_43_2_none_example_left.png"])
+    images_B = sorted([img for img in os.listdir(folder_B) if img != "BP_43_2_none_example_right.png"])
+
+    for img_A, img_B in zip(images_A, images_B):
+        left_image_path = os.path.join(folder_A, img_A)
+        right_image_path = os.path.join(folder_B, img_B)
+        print(f"Processing image pair: {img_A} and {img_B}")
+        response = query_model(api_key, left_image_path, right_image_path, example_left_image_base64, example_right_image_base64, question)
+        df.loc[f"{img_A} & {img_B}"] = [response]
+
+    df.to_excel(output_excel, index_label='Image Pair Name')
+
+# Define your paths and variables
+api_key =  # Use your actual API key
+left_image_path = # path to folder which stores the left side of the images
+right_image_path = # path to folder which stores the right side of the images
+question = "You received two sets of 6 figures. These sets of figures are differentiated from each other by a rule. Based on what the 6 figures in each set have in common, what is the rule that separates the two sets?"
+output_excel = # 'save_path\\GPT_data collection_batch 1.xlsx'
+
+# Call the function
+process_folder(api_key, left_image_path, right_image_path, question, output_excel)
+
+
+
+
+#*** MC data collection***
+import openai
+import os
+import base64
+import pandas as pd
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+    
+def query_model(api_key, left_set_image_path, right_set_image_path, stimulus_image_path, example_left_set_image_base64, example_right_set_image_base64, example_stimulus_image_base64, question):
+    # Load and encode images to base64
+    left_set_image_base64 = encode_image_to_base64(left_set_image_path)
+    right_set_image_base64 = encode_image_to_base64(right_set_image_path)
+    stimulus_image_base64 = encode_image_to_base64(stimulus_image_path)
+
+    # Prepare the messages with the question and images
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": "You are going to solve a mulitple-choice version of a Bongard problem. Here is an example of a solved mulitiple-choice Bongard problem."}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Here you see a set of figures called set A."},
+            {"type": "image", "image": example_left_set_image_base64}, 
+            {"type": "text", "text": "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes."}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Here you see another set of figures called set B."},
+            {"type": "image", "image": example_right_set_image_base64}, 
+            {"type": "text", "text": "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes."}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Here you see receive a stimulus."},
+            {"type": "image", "image": example_stimulus_image_base64}, 
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Answer: The stimulus is a wave line that goes from a larger magnitude to a smaller magnitude. Because set A consists of figures that go from larger to smaller magnitudes while set B consists of figures that go from smaller to larger magnitudes, the stimulus belongs to set A."}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Now it's your turn."}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Here you see a set of figures called set A."},
+            {"type": "image", "image": left_set_image_base64}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Here you see another set of figures called set B."},
+            {"type": "image", "image": right_set_image_base64}
+        ]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "You receive a stimulus in this image."}, 
+            {"type": "image", "image": stimulus_image_base64}
+        ]}, 
+        {"role": "user", "content": question}
+    ]
+
+    # Initialize the client with your API key
+    openai.api_key = api_key
+    
+    # Query the model
+    response = openai.chat.completions.create(
+        model="gpt-4-1106-vision-preview",  
+        messages=messages,
+        max_tokens=100,
+        temperature=0
+    )
+
+    # Return the response from the model
+    return response.choices[0].message.content
+
+def process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel):
+    df = pd.DataFrame(columns=['Left Image Set', 'Right Image Set', 'Stimulus', 'Response'])
+
+    # Get the example images' base64 strings
+    example_left_set_image_path = os.path.join(left_base_folder, "MC_p043_2_horizontal_example_left.png")
+    example_right_set_image_path = os.path.join(right_base_folder, "MC_p043_2_horizontal_example_right.png")
+    example_stimulus_image_path = os.path.join(stimuli_folder, "stim_p043_2_1_horizontal_example.png")
+    
+    example_left_set_image_base64 = encode_image_to_base64(example_left_set_image_path)
+    example_right_set_image_base64 = encode_image_to_base64(example_right_set_image_path)
+    example_stimulus_image_base64 = encode_image_to_base64(example_stimulus_image_path)
+
+    left_files = [f for f in sorted(os.listdir(left_base_folder)) if f != "MC_p043_2_horizontal_example_left.png"]
+    right_files = [f for f in sorted(os.listdir(right_base_folder)) if f != "MC_p043_2_horizontal_example_right.png"]
+    stimuli_files = [f for f in sorted(os.listdir(stimuli_folder)) if f != "stim_p043_2_1_horizontal_example.png"]
+
+    for left_file, right_file in zip(left_files, right_files):
+        # Extract problem_set and version assuming file names are formatted as `image_problemset_version_etc.png`
+        parts = left_file.split('_')
+        problem_set, version = parts[1], parts[2]
+        
+        print(f"Processing set images: {left_file} and {right_file}")  # Print current processing image set
+
+
+        # Loop through stimuli files that match current problem set and version
+        matched_stimuli = [f for f in stimuli_files if f.startswith(f"stim_{problem_set}_{version}") and f.endswith(f"{parts[3]}.png")]
+        
+        for stim_file in matched_stimuli:
+            stimulus_image_path = os.path.join(stimuli_folder, stim_file)
+            left_set_image_path = os.path.join(left_base_folder, left_file)
+            right_set_image_path = os.path.join(right_base_folder, right_file)
+
+            response = query_model(api_key, left_set_image_path, right_set_image_path, stimulus_image_path, 
+                                   example_left_set_image_base64, example_right_set_image_base64, example_stimulus_image_base64, question)
+            df.loc[len(df)] = [left_file, right_file, stim_file, response]
+
+    if not df.empty:
+        df.to_excel(output_excel, index=False)
+        print(f"Excel file written: {output_excel}")
+    else:
+        print("No data to write to Excel.")
+
+
+# Setup paths and API key
+api_key =  # Use your actual API key
+left_image_path = # path to folder which stores the left side of the images
+right_image_path = # path to folder which stores the right side of the images
+stimuli_folder = # path to folder which stores the stimuli
+question = "Focussing on what the figures in each set have in common and the characteristics of the stimulus, does the stimulus belong to set A, set B or neither of them? Give only your categorization"
+output_excel = 'save_path\\GPT_MC_data collection_batch 1.xlsx'
+
+# Process the folder
+process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel)
