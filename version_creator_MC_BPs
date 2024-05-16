@@ -1,5 +1,8 @@
 import os
-from PIL import Image
+import random
+from PIL import Image, ImageChops
+
+random.seed(2)  # Fixed seed for reproducibility
 
 # Parameters
 columns = 2
@@ -8,130 +11,103 @@ grid_count = 2  # Number of grids
 border_size = 10  # Border size between images
 outer_border = 20  # Outer border size around the entire image
 grid_spacing = 50  # Space between grids
-img_width, img_height = 100, 100  # Assuming size for demonstration; adjust as necessary
 
-# Paths - Adjust these paths to match your system
-image_dir ='file_path'
-base_save_path = 'file_path'
+# Paths
+image_dir = #path to cleaned individual squares
+base_save_path = #path to save the multiple-choice BPs
+unused_images_path = #path to save the stimuli of the multiple-choice BPs
 
-# Ensure output directory exists
+# Ensure output directories exist
 os.makedirs(base_save_path, exist_ok=True)
+os.makedirs(unused_images_path, exist_ok=True)
 
-# def save_left_out_images(version, mirror_mode):
-#     """
-#     Save the left-out images with the applied transformations in the specified Stimuli subfolder.
+# Define the image manipulation function
+def flip_image(image, flip_type):
+    if flip_type == "vertical":
+        return image.transpose(Image.FLIP_TOP_BOTTOM)
+    elif flip_type == "horizontal":
+        return image.transpose(Image.FLIP_LEFT_RIGHT)
+    return image
 
-#     Parameters:
-#     - version: The current version being processed.
-#     - mirror_mode: The mirroring mode ('original', 'horizontal', 'vertical').
-#     """
-#     stimuli_path = os.path.join(base_save_path, "Stimuli")  # Define the Stimuli subfolder path
-#     os.makedirs(stimuli_path, exist_ok=True)  # Ensure the Stimuli subfolder exists
+# def invert_image(image):
+#     """Invert the color of the image."""
+#     return ImageChops.invert(image)
 
-#     stimulus_version_key = f'stimuli_{version_number}'
-#     if stimulus_version_key in image_filenames_left_out:
-#         for stimulus_idx, stimulus_name in enumerate(image_filenames_left_out[stimulus_version_key], start=1):
-#             img_path = os.path.join(image_dir, stimulus_name)
-#             img = Image.open(img_path).resize((img_width, img_height))
+# Function to save unused images
+def save_unused_images(p_set, attempt, image_order, image_sets):
+    flip_types = ["none", "horizontal", "vertical"]
+    for set_id, used_images in image_order.items():
+        unused_images = [img for img in image_sets[set_id] if img not in used_images]
+        # Check if there are exactly two unused images, randomly select one if true
+        if len(unused_images) == 2:
+            unused_images = [random.choice(unused_images)]
 
-#             # Apply mirroring based on the mode
-#             if mirror_mode == 'horizontal':
-#                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
-#             elif mirror_mode == 'vertical':
-#                 img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        for img_path in unused_images:
+            with Image.open(img_path) as img:
+                img_name = os.path.basename(img_path)
+                # Create a standardized name based on your specified format
+                formatted_p_set = p_set.replace('p', 'p0') if len(p_set) == 3 else p_set
+                for flip_type in flip_types:
+                    flipped_img = flip_image(img, flip_type)
+                    flipped_img.save(os.path.join(unused_images_path, f'stim_{formatted_p_set}_{attempt + 2}_{set_id}_{flip_type}.png'))
+                    print(f'Saved unused flipped image: {os.path.join(unused_images_path, f"stim_{formatted_p_set}_{attempt + 2}_{set_id}_{flip_type}.png")}')
 
-#             # Construct the filename including the version and stimulus number
-#             stimulus_filename = f'p0{i}_{version_number}_stimulus_{stimulus_idx}_{mirror_mode}.png'
-#             img.save(os.path.join(stimuli_path, stimulus_filename))  # Save in the Stimuli subfolder
+                    # Save the inverted version
+                    # inverted_img = invert_image(flipped_img)
+                    # inverted_img.save(os.path.join(unused_images_path, f'stim_{formatted_p_set}_{attempt + 2}_{set_id}_{flip_type}_inverted.png'))
+                    # print(f'Saved unused inverted image: {os.path.join(unused_images_path, f"stim_{formatted_p_set}_{attempt + 2}_{set_id}_{flip_type}_inverted.png")}')
 
-BPs_to_skip = range(0, 1)  # Example: Skipping versions 5, 10, 15
 
-for i in range(1, 100):
-    if i in BPs_to_skip:
-        continue  # Skip the creation and saving of images for this version
-    # Manually specify the images based on their new naming scheme after you've renamed them
-    image_filenames = {
-        'version_1': [f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png'], # row 1 and 2 
-        'version_2': [f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png'], #row 2 and 3
-        'version_3': [f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png'],  # row 1 and 3
-        'version_4': [f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png'],  #row 2 and 1
-        'version_5': [f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png'],# row 3 and 2
-        'version_6': [f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png'],  # row 3 and 1
-    
-        'version_7': [f'p0{i}_1_2_1.png', f'p0{i}_1_1_1.png', f'p0{i}_1_2_2.png', f'p0{i}_1_1_2.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_2.png'], # row 1 and 2, columns flipped
-        'version_8': [f'p0{i}_1_2_2.png', f'p0{i}_1_1_2.png', f'p0{i}_1_2_3.png', f'p0{i}_1_1_3.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_3.png'], #row 2 and 3, columns flipped
-        'version_9': [f'p0{i}_1_2_1.png', f'p0{i}_1_1_1.png', f'p0{i}_1_2_3.png', f'p0{i}_1_1_3.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_3.png'],  # row 1 and 3, columns flipped
-        'version_10': [f'p0{i}_1_2_2.png', f'p0{i}_1_1_2.png', f'p0{i}_1_2_1.png', f'p0{i}_1_1_1.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_1.png'],  #row 2 and 1, columns flipped
-        'version_11': [f'p0{i}_1_2_3.png', f'p0{i}_1_1_3.png', f'p0{i}_1_2_2.png', f'p0{i}_1_1_2.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_2.png', f'p0{i}_2_1_2.png'],# row 3 and 2, columns flipped
-        'version_12': [f'p0{i}_1_2_3.png', f'p0{i}_1_1_3.png', f'p0{i}_1_2_1.png', f'p0{i}_1_1_1.png', f'p0{i}_2_2_3.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_1.png', f'p0{i}_2_1_1.png'],  # row 3 and 1, columns flipped
-    }
-    
-    # image_filenames_left_out = {
-    #     'stimuli_1': [f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png'], # row 1 and 2 
-    #     'stimuli_2': [f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png'],
-    #     'stimuli_3': [f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png'],
-        
-    #     'stimuli_7': [f'p0{i}_1_1_3.png', f'p0{i}_1_2_3.png', f'p0{i}_2_1_3.png', f'p0{i}_2_2_3.png'], # row 1 and 2 
-    #     'stimuli_8': [f'p0{i}_1_1_1.png', f'p0{i}_1_2_1.png', f'p0{i}_2_1_1.png', f'p0{i}_2_2_1.png'],
-    #     'stimuli_9': [f'p0{i}_1_1_2.png', f'p0{i}_1_2_2.png', f'p0{i}_2_1_2.png', f'p0{i}_2_2_2.png']
-    # }
-    
-    
-                
-                
-    # Initialize the version number
-    version_number = 1
-    
-    for version, filenames in image_filenames.items():
-        # Increment the version number only after processing all flip types for a given set
-        for swap in [False, True]:  # Loop for original and swapped versions
-            # Temporarily store images to save after processing all flip types
-            images_to_save = []
-            for mirror_mode in ['original', 'horizontal', 'vertical']:  # Loop for mirroring modes
-                # Create a blank image for the composite
-                total_width = outer_border * 2 + img_width * columns * grid_count + border_size * (columns - 1) * grid_count + grid_spacing * (grid_count - 1)
-                total_height = outer_border * 2 + img_height * rows + border_size * (rows - 1)
+# Define processing function for each mirroring type with the same order
+def generate_and_save_combined_images(problem_sets):
+    for p_set in problem_sets:
+        image_sets = {1: [], 2: []}
+        for filename in os.listdir(image_dir):
+            if filename.startswith(f'{p_set}_1_') or filename.startswith(f'{p_set}_2_'):
+                set_key = 1 if filename.split('_')[1] == '1' else 2
+                image_sets[set_key].append(os.path.join(image_dir, filename))
+
+        for attempt in range(7):  # Generate 7 unique configurations
+            randomized_image_orders = {}
+            formatted_p_set = p_set.replace('p', 'p0') if len(p_set) == 6 else p_set
+            for set_id in image_sets:
+                shuffled_images = image_sets[set_id].copy()
+                # Adjust seed by adding attempt number to base seed
+                seed = (2 if set_id == 1 else 5) + attempt + int(formatted_p_set[-3:5])
+                random.seed(seed)
+                random.shuffle(shuffled_images)
+                randomized_image_orders[set_id] = shuffled_images[:4]  # Take the first four images for each set
+
+            # Call to save unused images
+            save_unused_images(p_set, attempt, randomized_image_orders, image_sets)
+
+            # Generate and save combined images for each flip type
+            for flip_type in ["none", "horizontal", "vertical"]:
+                img_sample = Image.open(randomized_image_orders[1][0])
+                img_width, img_height = img_sample.size
+                total_width = 2 * (img_width * 2 + border_size) + grid_spacing + outer_border * 2
+                total_height = img_height * 2 + border_size + outer_border * 2
                 combined_image = Image.new('RGB', (total_width, total_height), 'white')
-    
-                # Determine the order of sets based on whether we are swapping
-                sets = [filenames[4:], filenames[:4]] if swap else [filenames[:4], filenames[4:]]
-    
-                # Iterate through each set
-                for set_id, img_names in enumerate(sets, start=1):
-                    for idx, img_name in enumerate(img_names):
-                        img_path = os.path.join(image_dir, img_name)
-                        img = Image.open(img_path).resize((img_width, img_height))
-    
-                        # Apply mirroring based on the mode
-                        if mirror_mode == 'horizontal':
-                            img = img.transpose(Image.FLIP_LEFT_RIGHT)
-                        elif mirror_mode == 'vertical':
-                            img = img.transpose(Image.FLIP_TOP_BOTTOM)
-    
-                        col, row = idx % columns, idx // columns
-                        x = outer_border + (set_id - 1) * (columns * img_width + border_size * (columns - 1) + grid_spacing) + col * (img_width + border_size)
-                        y = outer_border + row * (img_height + border_size)
-                        combined_image.paste(img, (x, y))
-    
-                # Store the combined image and its filename to be saved
-                filename = f'p0{i}_{version_number}_{mirror_mode}.png'
-                images_to_save.append((combined_image, filename))
+
+                for set_id, images in randomized_image_orders.items():
+                    for i, img_path in enumerate(images):
+                        with Image.open(img_path) as img:
+                            img = flip_image(img, flip_type)
+                            row, col = divmod(i, 2)
+                            x = outer_border + (set_id - 1) * (2 * img_width + border_size + grid_spacing) + col * (img_width + border_size)
+                            y = outer_border + row * (img_height + border_size)
+                            combined_image.paste(img, (x, y))
+
+                save_path = os.path.join(base_save_path, f'MC_{p_set}_{attempt + 2}_{flip_type}.png')
+                combined_image.save(save_path)
+                print(f'Saved: {save_path}')
+
+
                 
-                #save_left_out_images(version_number, mirror_mode)
-    
-    
-            # Save all images for the current version number
-            for img, fname in images_to_save:
-                img.save(os.path.join(base_save_path, fname))
-    
-            # Increment the version number for the next set of flip types
-            version_number += 1
-    
-    
+                
 
+# List of specific problem sets to process
+problem_sets = ["p02", "p03", "p09", "p08", "p021", "p023", "p07", "p048", "p034", "p036", "p010", "p039", "p025", "p06", "p035"]
 
-
-
-
-
-print("Composite images created successfully.")
+# Process images
+generate_and_save_combined_images(problem_sets)
