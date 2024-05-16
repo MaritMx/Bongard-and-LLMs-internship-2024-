@@ -19,9 +19,7 @@ This GitHub stores the files used by the internship project of Marit Metz in whi
 
 - splitting images in 2.py =  a script to split the newly created BPs into left and right parts to be able to use them in the API prompts. 
 
-- version_creator_MC_BPs = file to create the multiple-choice versions using the cleaned individual squares. Note the option to also store all possible stimuli per version based on the images not used in that version. Creates 36 different versions per Bongard problem and each version with 3 different rotation options. Stores the new versions as p0{BP number} {version} {orientation}.
+- version_creator_MC_BPs = file to create the multiple-choice versions of a selected set of BPs using the cleaned individual squares. Creates a total of 7 versions of each BP in the problem_sets, with each version having 3 orientations. Also stores a stimulus for both of the sets in all orientations. 
 
 - version_creator_open-ended_BPs.py = script to create open-ended versions of the BPs using cleaned individual squares. Creates 5 additional versions of each BP item. 
  
-
-- version_creator_open-ended_BPs.py = file to create the open-ended versions using the cleaned individual squares. Creates 36 different versions per Bongard problem and each version with 3 different rotation options. Stores the new versions as BP {BP number} {version} {orientation}  
