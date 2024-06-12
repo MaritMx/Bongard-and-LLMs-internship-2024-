@@ -1,0 +1,224 @@
+# open BPs
+import os
+import pandas as pd
+from PIL import Image
+import google.generativeai as genai
+
+def query_gemini(api_key, left_image_path, right_image_path, example_left_image_path, example_right_image_path, question):
+    # Configure the API key
+    genai.configure(api_key=api_key)
+    # Initialize the generative model
+    model = genai.GenerativeModel('gemini-1.5-pro-001')
+    # Load the example images
+    example_left_image = Image.open(example_left_image_path)
+    example_right_image = Image.open(example_right_image_path)
+    # Load the test images
+    left_image = Image.open(left_image_path)
+    right_image = Image.open(right_image_path)
+    # Prepare the prompt
+    prompt = [
+        "You are going to solve a Bongard problem. Here is an example of a solved Bongard problem.",
+        "Here you see a set of figures called set A.",
+        example_left_image,
+        "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes.",
+        "Here you see another set of figures called set B.",
+        example_right_image,
+        "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes.",
+        "Answer: Thus the rule that differentiates set A from set B is that the figures in set A contain wavelines that get smaller while the figures in set B contain wavelines that get bigger.",
+        "Now it's your turn.",
+        "Here you see a set of figures called set A.",
+        left_image,
+        "Here you see another set of figures called set B.",
+        right_image,
+        question
+    ]
+    # Generate the content using the model with streaming set to False
+    response = model.generate_content(prompt, stream=False, generation_config=genai.types.GenerationConfig( temperature=0))
+    return response
+
+def process_folder(api_key, folder_A, folder_B, question, output_excel, error_excel):
+    df = pd.DataFrame(columns=['gemini', 'model_id'])
+    error_df = pd.DataFrame(columns=['Image Pair Name'])
+    # Define paths for the example images
+    example_left_image_path = os.path.join(folder_A, "BP_43_2_none_example_left.png")
+    example_right_image_path = os.path.join(folder_B, "BP_43_2_none_example_right.png")
+    # Ensure both folders have the same number of images and pair them correctly
+    images_A = sorted([img for img in os.listdir(folder_A) if img != "BP_43_2_none_example_left.png"])
+    images_B = sorted([img for img in os.listdir(folder_B) if img != "BP_43_2_none_example_right.png"])
+    for img_A, img_B in zip(images_A, images_B):
+        left_image_path = os.path.join(folder_A, img_A)
+        right_image_path = os.path.join(folder_B, img_B)
+        pair_name = f"{img_A} & {img_B}"
+        try:
+            print(f"Processing image pair: {img_A} and {img_B}")
+            response = query_gemini(api_key, left_image_path, right_image_path, example_left_image_path, example_right_image_path, question)
+            df.loc[pair_name] = [response, "Gemini"]
+            df.to_excel(output_excel, index_label='Image Pair Name')  # Save after each iteration
+        except Exception as e:
+            print(f"Error processing image pair: {img_A} and {img_B} - {e}")
+            error_df.loc[pair_name] = [pair_name]
+            error_df.to_excel(error_excel, index_label='Image Pair Name')  # Save after each error
+        # Wait for 30 seconds before processing the next pair
+
+# Define your paths and variables
+api_key =  # Use your actual API key
+left_image_path =  "path to the left side of the images"
+right_image_path = "path to the right side of the images"
+question = "You received two sets of 6 figures. These sets of figures are differentiated from each other by a rule. Based on what the 6 figures in each set have in common, what is the rule that separates the two sets?"
+output_excel = "output path.xlsx
+error_excel = "path were you want to store excel file with images that got an error.xlsx"
+# Call the function
+process_folder(api_key, left_image_path, right_image_path, question, output_excel, error_excel)
+
+
+
+
+
+#### MC script
+import os
+import pandas as pd
+import pathlib
+from PIL import Image
+import google.generativeai as genai
+
+
+def query_gemini(api_key, left_set_image_path, right_set_image_path, stimulus_image_path, example_left_set_image_path, example_right_set_image_path, example_stimulus_image_path, question):
+    # Configure the API key
+    genai.configure(api_key=api_key)
+
+    # Initialize the generative model
+    model = genai.GenerativeModel('gemini-1.5-pro-001')
+
+    # Load the example images
+    example_left_set_image = Image.open(example_left_set_image_path)
+    example_right_set_image = Image.open(example_right_set_image_path)
+    example_stimulus_image = Image.open(example_stimulus_image_path)
+
+    # Load the test images
+    left_set_image = Image.open(left_set_image_path)
+    right_set_image = Image.open(right_set_image_path)
+    stimulus_image = Image.open(stimulus_image_path)
+
+    # Prepare the prompt
+    prompt = [
+        "You are going to solve a multiple-choice version of a Bongard problem. Here is an example of a solved multiple-choice Bongard problem.",
+        "Here you see a set of figures called set A.",
+        example_left_set_image,
+        "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes.",
+        "Here you see another set of figures called set B.",
+        example_right_set_image,
+        "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes.",
+        "Here you see receive a stimulus.",
+        example_stimulus_image,
+        "Answer: The stimulus is a wave line that goes from a larger magnitude to a smaller magnitude. Because set A consists of figures that go from larger to smaller magnitudes while set B consists of figures that go from smaller to larger magnitudes, the stimulus belongs to set A.",
+        "Now it's your turn.",
+        "Here you see a set of figures called set A.",
+        left_set_image,
+        "Here you see another set of figures called set B.",
+        right_set_image,
+        "You receive a stimulus in this image.",
+        stimulus_image,
+        question
+    ]
+
+    # Generate the content using the model with streaming set to False
+    response = model.generate_content(prompt, stream=False, generation_config=genai.types.GenerationConfig( temperature=0))
+    return response
+
+def process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel, error_excel):
+    df = pd.DataFrame(columns=['Left Image Set', 'Right Image Set', 'Stimulus', 'Response', 'model_id'])
+    error_df = pd.DataFrame(columns=['Left Image Set', 'Right Image Set', 'Stimulus'])
+
+    # Define paths for the example images
+    example_left_set_image_path = os.path.join(left_base_folder, "MC_p043_2_horizontal_example_left.png")
+    example_right_set_image_path = os.path.join(right_base_folder, "MC_p043_2_horizontal_example_right.png")
+    example_stimulus_image_path = os.path.join(stimuli_folder, "stim_p043_2_1_horizontal_example.png")
+
+    left_files = [f for f in sorted(os.listdir(left_base_folder)) if f != "MC_p043_2_horizontal_example_left.png"]
+    right_files = [f for f in sorted(os.listdir(right_base_folder)) if f != "MC_p043_2_horizontal_example_right.png"]
+    stimuli_files = [f for f in sorted(os.listdir(stimuli_folder)) if f != "stim_p043_2_1_horizontal_example.png"]
+
+    for left_file, right_file in zip(left_files, right_files):
+        # Extract problem_set and version assuming file names are formatted as `image_problemset_version_etc.png`
+        parts = left_file.split('_')
+        problem_set, version = parts[1], parts[2]
+        
+        print(f"Processing set images: {left_file} and {right_file}")  # Print current processing image set
+
+        # Loop through stimuli files that match current problem set and version
+        matched_stimuli = [f for f in stimuli_files if f.startswith(f"stim_{problem_set}_{version}") and f.endswith(f"{parts[3]}.png")]
+        
+        for stim_file in matched_stimuli:
+            stimulus_image_path = os.path.join(stimuli_folder, stim_file)
+            left_set_image_path = os.path.join(left_base_folder, left_file)
+            right_set_image_path = os.path.join(right_base_folder, right_file)
+
+            try:
+                response = query_gemini(api_key, left_set_image_path, right_set_image_path, stimulus_image_path, 
+                                        example_left_set_image_path, example_right_set_image_path, example_stimulus_image_path, question)
+                df.loc[len(df)] = [left_file, right_file, stim_file, response, "Gemini"]
+                # Save the DataFrame after each iteration
+                df.to_excel(output_excel, index=False)
+            except Exception as e:
+                print(f"Error processing image set {left_file} and {right_file} with stimulus {stim_file}: {e}")
+                error_df.loc[len(error_df)] = [left_file, right_file, stim_file]
+                error_df.to_excel(error_excel, index=False)
+
+    if not df.empty:
+        df.to_excel(output_excel, index=False)
+        print(f"Excel file written: {output_excel}")
+    else:
+        print("No data to write to Excel.")
+
+    if not error_df.empty:
+        error_df.to_excel(error_excel, index=False)
+        print(f"Error Excel file written: {error_excel}")
+    else:
+        print("No errors to write to Excel.")
+
+# Setup paths and API key
+api_key = # replace with the actual API key
+left_base_folder = "path to the left side of the images"
+right_base_folder = "path to the right side of the images"
+stimuli_folder = "stimuli folder"
+question = "Focusing on what the figures in each set have in common and the characteristics of the stimulus, does the stimulus belong to set A, set B or neither of them? Give only your categorization."
+output_excel = "output path.xlsx"
+error_excel = "path were you want to store excel file with images that got an error.xlsx"
+
+# Process the folder
+process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel, error_excel)
+
+
+
+### Cleaning gemini data
+import pandas as pd
+import re
+
+# Define the file path
+file_path = "path to gemini data"
+
+# Load the Excel file
+df = pd.read_excel(file_path)
+
+# Function to extract and format the "text" field from the JSON-like string
+def extract_text(content):
+    match = re.search(r'"text":\s*"(.*?)"', content, re.DOTALL)
+    if match:
+        text = match.group(1)
+        # Replace '\n' with actual newlines
+        text = text.replace('\\n', '\n')
+        # Replace escaped quotes
+        text = text.replace('\\"', '"')
+        # Ensure escaped backslashes are removed
+        text = re.sub(r'\\(?!n)', '', text)
+        return text.strip()
+    return ""
+
+# Apply the function to the 'gemini' column and create a new 'Response' column
+df['Cleaned response'] = df['Response'].apply(extract_text)
+
+# Save the new DataFrame with the 'Response' column back to an Excel file
+output_file_path = "path to gemini data collection_cleaned.xlsx'
+df.to_excel(output_file_path, index=False)
+
+print(f"Processed file saved to: {output_file_path}")
