@@ -1,0 +1,71 @@
+
+# scoring mc gpt
+import pandas as pd
+import numpy as np
+
+# Define the path to the Excel file
+file_path = "path to GPT_MC_data_collection.xlsx"
+
+# Read the specific sheet from the Excel file
+df = pd.read_excel(file_path, sheet_name='without BP 21')
+
+# Function to determine correctness
+def check_correctness(row):
+    if pd.isna(row['Response']):
+        return np.nan
+    if row['Correct response'] == 'A' and 'A' in row['Response']:
+        return 1
+    elif row['Correct response'] == 'B' and 'B' in row['Response']:
+        return 1
+    elif row['Correct response'] == 'Neither' and ('Neither' in row['Response'] or ('A' in row['Response'] and 'B' in row['Response'])):
+        return 1
+    else:
+        return 0
+
+# Apply the function to each row
+df['Correct'] = df.apply(check_correctness, axis=1)
+
+# Save the modified DataFrame back to an Excel file, same sheet or a new one
+output_path = "path to GPT_MC_data_collection_scored.xlsx"
+with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+    df.to_excel(writer, sheet_name='without BP 21', index=False)
+
+print("Excel file has been updated and saved with the specific sheet.")
+
+
+
+
+# scoring mc Claude and LLaVA and Gemini
+import pandas as pd
+import numpy as np
+
+# Define the path to the Excel file
+file_path = "path to Claude/LLaVA/Gemini_MC_data collection_cleaned.xlsx"
+
+# Read the specific sheet from the Excel file
+df = pd.read_excel(file_path)
+
+# Function to determine correctness
+def check_correctness(row):
+    if pd.isna(row['Category']):
+        return np.nan
+    elif row['Category'] == "Both":
+        return 0
+    if row['Correct response'] == 'A' and 'A' in row['Category']:
+        return 1
+    elif row['Correct response'] == 'B' and 'B' in row['Category']:
+        return 1
+    elif row['Correct response'] == 'Neither' and ('Neither' in row['Category'] or ('A' in row['Category'] and 'B' in row['Category'])):
+        return 1
+    else:
+        return 0
+
+# Apply the function to each row
+df['Correct'] = df.apply(check_correctness, axis=1)
+
+# Save the modified DataFrame back to an Excel file, same sheet or a new one
+output_path = "path to Claude/LLaVA/Gemini_MC_data collection_scored.xlsx"
+with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+    df.to_excel(writer, index=False)
+
+print("Excel file has been updated and saved with the specific sheet.")
