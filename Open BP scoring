@@ -1,0 +1,59 @@
+import time
+import os
+import json
+from typing import List, Dict
+import openai
+import pandas as pd
+
+# Load the data from the Excel files
+bp_data = pd.read_excel('path to model data.xlsx')
+prompts_data = pd.read_excel('path to Automatic scoring prompts.xlsx')
+
+# Create a new column in bp_data for the responses
+bp_data['Correct'] = None
+
+# Define the API key
+api_key = # replace with actual API key
+TEMPERATURE = 0.0
+MAX_TOKENS = 100
+
+# Initialize the OpenAI client
+openai.api_key = api_key
+
+def query_model(prompt_part, row_response):
+    response = openai.ChatCompletion.create(
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "user", "content": prompt_part}, 
+            {"role": "user", "content": row_response}
+
+        ],
+        temperature=TEMPERATURE,
+        max_tokens=MAX_TOKENS
+    )
+    
+    print(response.choices[0].message['content'])
+    return response.choices[0].message['content']
+
+# Process each row in bp_data
+total_rows = len(bp_data)
+
+for index, row in bp_data.iterrows():
+    progress = (index + 1) / total_rows * 100
+    print(f"Processing row {index + 1} of {total_rows} ({progress:.2f}%)")
+    
+    item_value = row['Item']
+    row_response = row['Response']
+    prompt_part = prompts_data[prompts_data['Item'] == item_value]['Prompt'].values[0]
+    #full_prompt = f"{prompt_part}\n\n{row_response}"
+    response = query_model(prompt_part, row_response)
+    bp_data.at[index, 'Correct'] = response
+    
+    
+    # Save the modified bp_data to a new Excel file every 10 rows
+    if index % 10 == 0:
+        bp_data.to_excel('path to model data (GPT scored).xlsx', index=False)
+
+# Final save to ensure all data is written
+bp_data.to_excel('path to model data (GPT-4 scored).xlsx', index=False)
+
