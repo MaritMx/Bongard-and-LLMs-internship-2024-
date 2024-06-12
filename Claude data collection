@@ -1,0 +1,216 @@
+# open ended script
+
+import anthropic
+import os
+import base64
+import pandas as pd
+import time
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def query_model(api_key, left_image_base64, right_image_base64, example_left_image_base64, example_right_image_base64, question):
+    # Prepare the messages with the question and image
+    client = anthropic.Anthropic(api_key=api_key)
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": "You are going to solve a Bongard problem. Here is an example of a solved Bongard problem."},
+            {"type": "text", "text": "Here you see a set of figures called set A."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": example_left_image_base64}},
+            {"type": "text", "text": "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes."},
+            {"type": "text", "text": "Here you see another set of figures called set B."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": example_right_image_base64}},
+            {"type": "text", "text": "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes."},
+            {"type": "text", "text": "Answer: Thus the rule that differentiates set A from set B is that the figures in set A contain wavelines that get smaller while the figures in set B contain wavelines that get bigger."},
+            {"type": "text", "text": "Now it's your turn."},
+            {"type": "text", "text": "Here you see a set of figures called set A:"},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": left_image_base64}},
+            {"type": "text", "text": "Here you see another set of figures called set B:"},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": right_image_base64}},
+            {"type": "text", "text": question}
+        ]}
+    ]
+
+    # Send the message and return the response
+    response = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=300,
+        temperature=0,
+        messages=messages
+    )
+    
+    
+    return response.content
+
+def process_folder(api_key, folder_A, folder_B, question, output_excel):
+    df = pd.DataFrame(columns=['Claude'])
+
+    example_left_image_path = os.path.join(folder_A, "BP_43_2_none_example_left.png")
+    example_right_image_path = os.path.join(folder_B, "BP_43_2_none_example_right.png")
+    example_left_image_base64 = encode_image_to_base64(example_left_image_path)
+    example_right_image_base64 = encode_image_to_base64(example_right_image_path)
+
+    images_A = sorted([img for img in os.listdir(folder_A) if img != "BP_43_2_none_example_left.png"])
+    images_B = sorted([img for img in os.listdir(folder_B) if img != "BP_43_2_none_example_right.png"])
+
+    for img_A, img_B in zip(images_A, images_B):
+        left_image_base64 = encode_image_to_base64(os.path.join(folder_A, img_A))
+        right_image_base64 = encode_image_to_base64(os.path.join(folder_B, img_B))
+        print(f"Processing image pair: {img_A} and {img_B}")
+        response = query_model(api_key, left_image_base64, right_image_base64, example_left_image_base64, example_right_image_base64, question)
+        df.loc[f"{img_A} & {img_B}"] = [response]
+        time.sleep(12)  # Wait for 12 seconds to avoid exceeding the rate limit
+
+    df.to_excel(output_excel, index_label='Image Pair Name')
+
+# Define your paths and variables
+api_key = # Use your actual API key
+folder_A = "path to left images"
+folder_B = "path to right images"
+output_excel = "path to output file.xlsx"
+question = "You received two sets of 6 figures. These sets of figures are differentiated from each other by a rule. Based on what the 6 figures in each set have in common, what is the rule that separates the two sets?"
+
+# Call the function
+process_folder(api_key, folder_A, folder_B, question, output_excel)
+
+
+
+
+# multiple choice script
+import anthropic
+import os
+import base64
+import httpx
+import pandas as pd
+import time
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def query_model(api_key, left_set_image_base64, right_set_image_base64, stimulus_image_base64, example_left_set_image_base64, example_right_set_image_base64, example_stimulus_image_base64, question):
+    # Initialize the client with your API key
+    client = anthropic.Anthropic(api_key=api_key)
+    
+    # Prepare the messages with the question and images
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": "You are going to solve a multiple-choice version of a Bongard problem. Here is an example of a solved multiple-choice Bongard problem."},
+            {"type": "text", "text": "Here you see a set of figures called set A."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": example_left_set_image_base64}},
+            {"type": "text", "text": "Commonality in set A: The figures in this set all contain wave lines that go from larger to smaller magnitudes."},
+            {"type": "text", "text": "Here you see another set of figures called set B."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": example_right_set_image_base64}},
+            {"type": "text", "text": "Commonality in set B: The figures in this set all contain wave lines that go from smaller to larger magnitudes."},
+            {"type": "text", "text": "Here you see receive a stimulus."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": example_stimulus_image_base64}},
+            {"type": "text", "text": "Answer: The stimulus is a wave line that goes from a larger magnitude to a smaller magnitude. Because set A consists of figures that go from larger to smaller magnitudes while set B consists of figures that go from smaller to larger magnitudes, the stimulus belongs to set A."},
+            {"type": "text", "text": "Now it's your turn."},
+            {"type": "text", "text": "Here you see a set of figures called set A."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": left_set_image_base64}},
+            {"type": "text", "text": "Here you see another set of figures called set B."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": right_set_image_base64}},
+            {"type": "text", "text": "You receive a stimulus in this image."},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": stimulus_image_base64}},
+            {"type": "text", "text": question}
+        ]}
+    ]
+
+    # Query the model and return the response
+    response = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=100,
+        temperature = 0,
+        messages=messages
+    )
+    return response.content
+
+def process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel):
+    df = pd.DataFrame(columns=['Left Image Set', 'Right Image Set', 'Stimulus', 'Response'])
+    
+    example_left_set_image_path = os.path.join(left_base_folder, "MC_p043_2_horizontal_example_left.png")
+    example_right_set_image_path = os.path.join(right_base_folder, "MC_p043_2_horizontal_example_right.png")
+    example_stimulus_image_path = os.path.join(stimuli_folder, "stim_p043_2_1_horizontal_example.png")
+    
+    example_left_set_image_base64 = encode_image_to_base64(example_left_set_image_path)
+    example_right_set_image_base64 = encode_image_to_base64(example_right_set_image_path)
+    example_stimulus_image_base64 = encode_image_to_base64(example_stimulus_image_path)
+
+
+    left_files = [f for f in sorted(os.listdir(left_base_folder)) if f != "MC_p043_2_horizontal_example_left.png"]
+    right_files = [f for f in sorted(os.listdir(right_base_folder)) if f != "MC_p043_2_horizontal_example_right.png"]
+    stimuli_files = [f for f in sorted(os.listdir(stimuli_folder)) if f != "stim_p043_2_1_horizontal_example.png"]
+
+    for left_file, right_file in zip(left_files, right_files):
+        left_set_image_path = os.path.join(left_base_folder, left_file)
+        right_set_image_path = os.path.join(right_base_folder, right_file)
+        left_set_image_base64 = encode_image_to_base64(left_set_image_path)
+        right_set_image_base64 = encode_image_to_base64(right_set_image_path)
+
+        # Extract problem_set and version assuming file names are formatted as `image_problemset_version_etc.png`
+        parts = left_file.split('_')
+        problem_set, version = parts[1], parts[2]
+
+        # Loop through stimuli files that match current problem set and version
+        matched_stimuli = [f for f in stimuli_files if f.startswith(f"stim_{problem_set}_{version}") and f.endswith(f"{parts[3]}.png")]
+
+        for stim_file in matched_stimuli:
+            stimulus_image_path = os.path.join(stimuli_folder, stim_file)
+            stimulus_image_base64 = encode_image_to_base64(stimulus_image_path)
+
+            print(f"Processing image set: {left_file}, {right_file} with stimulus: {stim_file}")  # Print current processing image set
+
+            response = query_model(api_key, left_set_image_base64, right_set_image_base64, stimulus_image_base64, example_left_set_image_base64, example_right_set_image_base64, example_stimulus_image_base64, question)
+            df.loc[len(df)] = [left_file, right_file, stim_file, response]
+
+            # Sleep to manage rate limit of API calls
+            time.sleep(6)
+
+    if not df.empty:
+        df.to_excel(output_excel, index=False)
+        print(f"Excel file written: {output_excel}")
+    else:
+        print("No data to write to Excel.")
+
+# Setup paths and variables
+api_key =  # Use your actual API key
+left_base_folder = "path to left images"
+right_base_folder = "path to right images"
+stimuli_folder = "path to stimuli"
+question = "Focussing on what the figures in each set have in common and the characteristics of the stimulus, does the stimulus belong to set A, set B or neither of them? Give only your categorization"
+output_excel = "path to output file.xlsx"
+
+# Process the folder
+process_folder(api_key, left_base_folder, right_base_folder, stimuli_folder, output_excel)
+
+
+### cleaning claude data
+import pandas as pd
+import re
+
+def clean_text(text):
+    # Extract the text within the single quotes after 'text='
+    match = re.search(r"TextBlock\(text='(.*?)', type='text'\)", text)
+    if match:
+        # Replace escaped new lines and return the cleaned text
+        return match.group(1).replace("\\n", "\n")
+    return text  # Return original text if no match found
+
+def process_responses(file_path):
+    # Load the Excel file
+    df = pd.read_excel(file_path)
+
+    # Apply the cleaning function to the 'Response' column
+    df['Cleaned _ Response'] = df['Response'].apply(clean_text)
+
+    # Save the processed DataFrame to a new Excel file
+    output_path = file_path.replace(".xlsx", "_cleaned.xlsx")
+    df.to_excel(output_path, index=False)
+    print(f"Processed file saved to {output_path}")
+
+# Specify the path to your Excel file
+file_path = path to Claude_data collection.xlsx"
+process_responses(file_path)
