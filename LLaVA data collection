@@ -1,0 +1,217 @@
+### creating combined MC images for the model, stimulus and both sets
+
+import os
+from PIL import Image
+
+def combine_images(top_image_path, bottom_images_dir, output_dir):
+    # Load the top image
+    top_image = Image.open(top_image_path)
+    width_top, height_top = top_image.size
+    
+    # Extract base parts for filename manipulation
+    base_parts = os.path.basename(top_image_path).split('_')
+    problem = base_parts[1]
+    version = base_parts[2]
+    mirror_type = base_parts[3]
+
+    # Generate combined images for each of the three variations
+    for i in range(1, 4):  # Assuming three variations: 1, 2, 3
+        bottom_image_name = f"stim_{problem}_{version}_{i}_{mirror_type}"
+        bottom_image_path = os.path.join(bottom_images_dir, bottom_image_name)
+        if os.path.exists(bottom_image_path):
+            bottom_image = Image.open(bottom_image_path)
+            width_bottom, height_bottom = bottom_image.size
+
+            # Calculate new image dimensions including 20 pixel padding at the bottom
+            new_width = max(width_top, width_bottom)
+            new_height = height_top + height_bottom + 10 + 20  # Adding 10 pixels padding between images and 20 pixels at the bottom
+
+            # Create a new blank white image
+            new_image = Image.new("RGB", (new_width, new_height), "white")
+
+            # Position calculations for centering images
+            x_top = (new_width - width_top) // 2
+            x_bottom = (new_width - width_bottom) // 2
+
+            # Paste top and bottom images into the new image
+            new_image.paste(top_image, (x_top, 0))
+            new_image.paste(bottom_image, (x_bottom, height_top + 10))
+
+            # Saving the combined image
+            combined_name = f"{problem}_{version}_{i}_{mirror_type}"
+            combined_path = os.path.join(output_dir, combined_name)
+            new_image.save(combined_path)
+            print(f"Saved combined image to {combined_path}")
+
+# Directory paths
+top_images_dir = "path to set image (both sets in one image)"
+bottom_images_dir = "path to stimuli images"
+output_dir = "path to where you want the combined images saved"
+
+# Ensure output directory exists
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+# Process each top image
+for top_image_name in os.listdir(top_images_dir):
+    if top_image_name.startswith("MC_") and top_image_name.endswith(".png"):
+        top_image_path = os.path.join(top_images_dir, top_image_name)
+        combine_images(top_image_path, bottom_images_dir, output_dir)
+
+
+### open BP script
+import replicate
+import base64
+import os
+import pandas as pd
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def query_model(api_key, image_path, question):
+    # Load and encode the test images to base64
+    image_base64 = encode_image_to_base64(image_path)
+
+    # Prepare the prompt with the question and images
+    prompt = (
+        "You are going to solve a Bongard problem.\n"
+        "A Bongard problem consists of two sets that consist of six figures ordered in two columns and three rows per set.\n"
+        "The set on the left is called set A and the set on the right is called set B.\n"
+        f"{question}"
+    )
+
+    # Prepare the input for the API
+    input = {
+        "image": "data:image/png;base64," + image_base64,
+        "prompt": prompt,
+        "temperature": 0
+    }
+
+    # Initialize the client with your API key
+    client = replicate.Client(api_token=api_key)
+
+    # Query the model
+    output = client.run(
+        "yorickvp/llava-v1.6-vicuna-13b:0603dec596080fa084e26f0ae6d605fc5788ed2b1a0358cd25010619487eae63",
+        input=input
+    )
+
+    # Return the response from the model
+    return "".join(output)
+
+def process_folder(api_key, folder_A, question, output_excel, error_excel):
+    # Create DataFrame with columns 'Response' and 'Model ID'
+    df = pd.DataFrame(columns=['Response', 'model_id'])
+    error_df = pd.DataFrame(columns=['Image_pair'])  # DataFrame to log images that cause errors
+
+    # Ensure both folders have the same number of images and pairs them correctly
+    images_A = sorted([img for img in os.listdir(folder_A) if img != "BP_43_2_none_example.png"])
+
+    for img_A in images_A:
+        image_path = os.path.join(folder_A, img_A)
+        print(f"Processing image: {img_A}")
+        try:
+            response = query_model(api_key, image_path, question)
+            df.loc[f"{img_A}"] = [response, "LLaVA"]
+        except Exception as e:
+            print(f"Error processing image {img_A}: {e}")
+            df.loc[f"{img_A}"] = [None, "LLaVA"]  # Log as None in the response column
+            error_df.loc[f"{img_A}"] = [img_A]  # Log the problematic image
+
+        # Save the DataFrame to Excel after each update
+        df.to_excel(output_excel, index_label='Image Name')
+        error_df.to_excel(error_excel, index_label='Image Name')
+
+# Define your paths and variables
+api_key =  # Use your actual replicate API key
+folder_A = "path to folder with both sets in one image"
+question = "You received an image with two sets of 6 figures. These sets of figures are differentiated from each other by a rule. Based on what the 6 figures in each set have in common, what is the rule that separates the two sets?"
+output_excel =  "path to LLava_data_collection.xlsx'
+error_excel = "path to error_images.xlsx"
+
+# Call the function
+process_folder(api_key, folder_A, question, output_excel, error_excel)
+
+
+
+###### MC BPs
+ 
+import replicate
+import base64
+import os
+import pandas as pd
+
+def encode_image_to_base64(image_path):
+    """Encode an image to base64."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def query_model(api_key, image_path, question):
+    # Load and encode the test images to base64
+    image_base64 = encode_image_to_base64(image_path)
+
+    # Prepare the prompt with the question and images
+    prompt = (
+        "You are going to solve a multiple-choice version of a Bongard problem.\n"
+        "The top of the Bongard problem consists of two sets, that consist of four figures ordered in two columns and two rows per set.\n"
+        "The set on the left is called set A and the set on the right is called set B.\n"
+        "The bottom of the Bongard problem consists of a stimulus which belongs to set A, set B, or neither of the two sets.\n"
+        f"{question}"
+    )
+
+    # Prepare the input for the API
+    input = {
+        "image": "data:image/png;base64," + image_base64,
+        "prompt": prompt,
+        "temperature": 0
+    }
+
+    # Initialize the client with your API key
+    client = replicate.Client(api_token=api_key)
+
+    # Query the model
+    output = client.run(
+        "yorickvp/llava-v1.6-vicuna-13b:0603dec596080fa084e26f0ae6d605fc5788ed2b1a0358cd25010619487eae63",
+        input=input
+    )
+
+    # Return the response from the model
+    return "".join(output)
+
+def process_folder(api_key, folder_A, question, output_excel, error_excel):
+    # Create DataFrame with columns 'Response' and 'Model ID'
+    df = pd.DataFrame(columns=['Response', 'model_id'])
+    error_df = pd.DataFrame(columns=['Image_pair'])  # DataFrame to log images that cause errors
+
+    # Ensure both folders have the same number of images and pairs them correctly
+    images_A = sorted([img for img in os.listdir(folder_A) if img != "BP_43_2_none_example.png"])
+
+    for img_A in images_A:
+        image_path = os.path.join(folder_A, img_A)
+        print(f"Processing image: {img_A}")
+        try:
+            response = query_model(api_key, image_path, question)
+            df.loc[f"{img_A}"] = [response, "LLaVA"]
+        except Exception as e:
+            print(f"Error processing image {img_A}: {e}")
+            df.loc[f"{img_A}"] = [None, "LLaVA"]  # Log as None in the response column
+            error_df.loc[f"{img_A}"] = [img_A]  # Log the problematic image
+
+        # Save the DataFrame to Excel after each update
+        df.to_excel(output_excel, index_label='Image Name')
+        error_df.to_excel(error_excel, index_label='Image Name')
+
+# Define your paths and variables
+api_key = # Use your actual replicate API key
+folder_A = "path to MC images for LLaVA"
+question = "Focussing on what the figures in each set have in common and the characteristics of the stimulus, does the stimulus belong to set A, set B or neither of them? Give only your categorization"
+output_excel = "path to LLaVA_MC_data_collection.xlsx'
+error_excel = "path to error_MC_images.xlsx'
+
+# Call the function
+process_folder(api_key, folder_A, question, output_excel, error_excel)
+
+
+
