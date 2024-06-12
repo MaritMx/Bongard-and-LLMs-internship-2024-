@@ -1,0 +1,41 @@
+
+import pandas as pd
+import re  # Import the regex module
+
+# Function to classify responses
+def classify_response(text):
+   
+    if pd.isna(text):  # Check if the text is NaN
+        return "Missing"  # Handle missing or NaN entries
+    
+    text = str(text).lower() 
+    
+    # Using regex to find matches
+    pattern_set_a = r"(belongs to set a|set a rather than set b)"
+    pattern_set_b = r"(belongs to set b|set b rather than set a)"
+    pattern_both = r"(belongs to both set a and set b)"
+    
+    # Search for patterns in the text
+    if re.search(pattern_set_a, text):
+        return "Set A"
+    elif re.search(pattern_set_b, text):
+        return "Set B"
+    elif re.search(pattern_both, text):
+        return "Both"
+    else:
+        return "Neither"
+
+# Load the Excel file
+file_path = "path to MC_data_collection.xlsx"
+data = pd.read_excel(file_path)
+
+# Make sure to use the correct column name, ensuring no extra spaces
+data['Category'] = data['Response'].apply(classify_response)
+
+# Print the DataFrame to see the results
+print(data[['Response', 'Category']])
+
+# Save the DataFrame with the new 'Category' column to a new Excel file
+#output_path = file_path.replace("cleaned.xlsx", "classified.xlsx")
+output_path = "path to MC_data_collection_classified.xlsx"
+data.to_excel(output_path, index=False)
